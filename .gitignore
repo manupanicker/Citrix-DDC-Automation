@@ -1,0 +1,21 @@
+# Logs
+Logs/
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# Archives
+*.zip
+*.7z
+
+# PowerShell
+*.psd1.bak
+
+# Visual Studio Code
+.vscode/settings.json
+
+# Windows
+Thumbs.db
+Desktop.ini
