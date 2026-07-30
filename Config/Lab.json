@@ -1,0 +1,23 @@
+{
+    "Environment": "Lab",
+
+    "Company": "AlphaQ Technologies",
+
+    "Domain": "alphaq.lab",
+
+    "Citrix": {
+        "SiteName": "AQ-LAB",
+        "DeliveryController": "AQ-DDC01",
+        "StoreFront": "AQ-SF01",
+        "LicenseServer": "AQ-LIC01"
+    },
+
+    "SQL": {
+        "Server": "AQ-SQL01",
+        "Database": "CitrixSite"
+    },
+
+    "Logging": {
+        "LogPath": "C:\\Logs\\Citrix-DDC-Automation.log"
+    }
+}

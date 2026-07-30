@@ -26,5 +26,26 @@ function Write-Log {
         Add-Content -Path $LogFile -Value $LogEntry
     }
 }
+function Write-ValidationResult {
 
-Export-ModuleMember -Function Write-Log
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Check,
+
+        [Parameter(Mandatory)]
+        [bool]$Passed,
+
+        [string]$SuccessMessage = "Passed",
+
+        [string]$FailureMessage = "Failed"
+    )
+
+    if ($Passed) {
+        Write-Log "$Check - $SuccessMessage" -Level SUCCESS
+    }
+    else {
+        Write-Log "$Check - $FailureMessage" -Level ERROR
+    }
+}
+Export-ModuleMember -Function Write-Log, Write-ValidationResult
