@@ -651,7 +651,7 @@ try {
         "CitrixConfigurationLogging",
         "CitrixHostService",
         "CitrixMachineCreationService",
-        "CitrixMonitorService"
+        "CitrixMonitor"
     )
 
     $Services = $null
