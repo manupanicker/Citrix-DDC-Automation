@@ -184,7 +184,7 @@ try {
     $LogFile = "C:\Temp\CitrixDDCInstall.log"
 
     $RebootCount = 0
-    $MaxReboots = 2
+    $MaxReboots = 6
 
     # --------------------------------------------------------
     # Target pre-flight checks
