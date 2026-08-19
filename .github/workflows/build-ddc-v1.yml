@@ -1,0 +1,60 @@
+name: Build DDC v1
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-ddc-v1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build v1 from original DDC runbook
+        shell: python
+        run: |
+          from pathlib import Path
+
+          source_path = Path('Runbooks/Install-CitrixDDC.ps1')
+          target_path = Path('Runbooks/Install-CitrixDDC_v1.ps1')
+          source = source_path.read_text(encoding='utf-8')
+
+          if len(source.splitlines()) < 600:
+              raise SystemExit('Refusing to build v1: original DDC runbook is unexpectedly shorter than 600 lines.')
+
+          marker = '    $LogFile = "C:\\Temp\\CitrixDDCInstall.log"\n'
+          if marker not in source:
+              raise SystemExit('Expected original DDC log variable block was not found.')
+
+          source = source.replace(
+              marker,
+              marker + '\n    $RebootCount = 0\n    $MaxReboots = 2\n',
+              1
+          )
+
+          old = '''    if ($Preflight.PendingReboot) {\n        throw "Target server has a pending reboot. Reboot the server and rerun the DDC installation before continuing."\n    }'''
+
+          new = '''    if ($Preflight.PendingReboot) {\n\n        $RebootCount++\n\n        if ($RebootCount -gt $MaxReboots) {\n            throw "Maximum automatic reboot limit of $MaxReboots has been reached. Target server still reports a pending reboot."\n        }\n\n        Write-Output ""\n        Write-Output "============================================================"\n        Write-Output "PENDING REBOOT DETECTED"\n        Write-Output "============================================================"\n        Write-Output "Target server requires a reboot before DDC installation can continue."\n        Write-Output "Automatic reboot: $RebootCount of $MaxReboots"\n        Write-Output "Rebooting target server..."\n\n        try {\n            Invoke-Command -Session $Session -ScriptBlock {\n                Restart-Computer -Force\n            } -ErrorAction Stop | Out-Null\n        }\n        catch {\n            Write-Output "Expected WinRM disconnect during reboot: $($_.Exception.Message)"\n        }\n\n        Remove-PSSession -Session $Session -ErrorAction SilentlyContinue\n        $Session = $null\n\n        Write-Output "Waiting for target server to return through WinRM..."\n\n        $ServerBack = $false\n\n        for ($Attempt = 1; $Attempt -le 30; $Attempt++) {\n\n            Start-Sleep -Seconds 10\n\n            try {\n                Test-WSMan `\n                    -ComputerName $ComputerName `\n                    -Authentication Negotiate `\n                    -Credential $Credential `\n                    -ErrorAction Stop | Out-Null\n\n                $ServerBack = $true\n                Write-Output "WinRM available after reboot. Attempt: $Attempt"\n                break\n            }\n            catch {\n                Write-Output "Waiting for WinRM... Attempt $Attempt of 30"\n            }\n        }\n\n        if (-not $ServerBack) {\n            throw "Target server did not become available through WinRM within the reboot timeout."\n        }\n\n        Write-Output "Creating new remote PowerShell session..."\n\n        $Session = New-PSSession `\n            -ComputerName $ComputerName `\n            -Authentication Negotiate `\n            -Credential $Credential `\n            -ErrorAction Stop\n\n        Write-Output "Remote session re-established: SUCCESS"\n\n        # Re-run the pending reboot check after the automatic reboot.\n        $PostRebootPending = Invoke-Command -Session $Session -ScriptBlock {\n\n            $PendingReboot = $false\n\n            $PendingPaths = @(\n                "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Component Based Servicing\\RebootPending",\n                "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update\\RebootRequired"\n            )\n\n            foreach ($Path in $PendingPaths) {\n                if (Test-Path $Path) {\n                    $PendingReboot = $true\n                }\n            }\n\n            $CBSReboot = Get-ItemProperty `\n                -Path "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager" `\n                -Name PendingFileRenameOperations `\n                -ErrorAction SilentlyContinue\n\n            if ($CBSReboot) {\n                $PendingReboot = $true\n            }\n\n            return $PendingReboot\n\n        } -ErrorAction Stop\n\n        if ($PostRebootPending) {\n            throw "Target server still reports a pending reboot after the automatic reboot."\n        }\n\n        Write-Output "Pending reboot cleared successfully."\n    }'''
+
+          if old not in source:
+              raise SystemExit('Expected original pending reboot block was not found.')
+
+          source = source.replace(old, new, 1)
+          target_path.write_text(source, encoding='utf-8')
+
+          if len(source.splitlines()) < 650:
+              raise SystemExit('Refusing to write v1: resulting file is unexpectedly short.')
+
+      - name: Commit v1
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Runbooks/Install-CitrixDDC_v1.ps1
+          git diff --cached --quiet && exit 0
+          git commit -m 'Create DDC v1 with automatic reboot handling'
+          git push
