@@ -209,7 +209,6 @@ $NIC = New-AzNetworkInterface `
     -SubnetId $Subnet.Id `
     -NetworkSecurityGroupId $NSG.Id `
     -EnableAcceleratedNetworking:$AcceleratedNetwork `
-    -PrivateIpAddressVersion IPv4 `
     -ErrorAction Stop
 
 Write-Output "NIC created: $NICName"
