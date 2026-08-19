@@ -387,9 +387,12 @@ try {
             Write-Output "Log       : $LogDirectory"
 
             $Arguments = @(
+                "/components controller,desktopstudio,webstudio,desktopdirector"
+                "/nosql"
                 "/quiet"
                 "/noreboot"
                 "/no_pending_reboot_check"
+                "/disableexperiencemetrics"
                 "/logpath `"$LogDirectory`""
             ) -join " "
 
