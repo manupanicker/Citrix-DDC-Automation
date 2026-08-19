@@ -31,11 +31,7 @@ jobs:
           if marker not in source:
               raise SystemExit('Expected original DDC log variable block was not found.')
 
-          source = source.replace(
-              marker,
-              marker + '\n    $RebootCount = 0\n    $MaxReboots = 2\n',
-              1
-          )
+          source = source.replace(marker, marker + '\n    $RebootCount = 0\n    $MaxReboots = 2\n', 1)
 
           old = '''    if ($Preflight.PendingReboot) {\n        throw "Target server has a pending reboot. Reboot the server and rerun the DDC installation before continuing."\n    }'''
 
