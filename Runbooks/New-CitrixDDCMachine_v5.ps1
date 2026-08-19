@@ -69,7 +69,7 @@ function Write-Section {
 # VALIDATION
 # ============================================================
 
-Write-Section "Citrix DDC Machine Creation v5"
+Write-Section "Citrix DDC Machine Creation v5 - Updated"
 
 Write-Output "Machine Name       : $MachineName"
 Write-Output "VM Name            : $MachineName"
@@ -282,7 +282,7 @@ Write-Section "Retrieving DDC Credential From Key Vault"
 Write-Output "Obtaining Key Vault access token using Azure Automation Managed Identity..."
 
 $KeyVaultToken = (Get-AzAccessToken `
-    -ResourceUrl "https://vault.azure.net" `
+    -ResourceUrl "https://vault.azure.net/" `
     -ErrorAction Stop).Token
 
 if ([string]::IsNullOrWhiteSpace($KeyVaultToken)) {
@@ -295,11 +295,16 @@ $KVHeaders = @{
 
 $SecretUri = "https://$KeyVaultName.vault.azure.net/secrets/$DomainCredentialSecret?api-version=7.4"
 
+Write-Output "Key Vault access token: SUCCESS"
+Write-Output "Calling Key Vault REST API..."
+
 $SecretResponse = Invoke-RestMethod `
     -Method GET `
     -Uri $SecretUri `
     -Headers $KVHeaders `
     -ErrorAction Stop
+
+Write-Output "Key Vault REST call: SUCCESS"
 
 $SecretValue = $SecretResponse.value
 
